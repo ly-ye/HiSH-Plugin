@@ -4,29 +4,74 @@
 
 ---
 
-## 📦 这是什么
+## ⚠️ 重要说明
 
-一个 Operit AI 插件，装上后就能在手机上跑 Linux 虚拟机。
+**QEMU 二进制、Linux 内核、rootfs 需要你自己准备。**
 
-- ✅ 不依赖系统终端（通过 Java Bridge 直接启动 QEMU）
-- ✅ 支持端口转发、共享文件夹、VNC 远程桌面
-- ✅ 21 个工具，完整虚拟机生命周期管理
+这些文件不在这个仓库里，原因：
+- QEMU 二进制约 30MB，内核约 20MB，rootfs 约 500MB
+- GitHub 有单文件 100MB 限制，放不进来
 
 ---
 
-## 🚀 3 步搞定
+## 📦 你需要的 3 个文件
 
-### 第 1 步：下载 3 个文件
+| 文件 | 大小 | 从哪里获取 |
+|------|------|-----------|
+| `qemu-system-aarch64` | ~30MB | 见下方 |
+| `Image`（内核） | ~20MB | 见下方 |
+| `rootfs.qcow2` | ~500MB | 见下方 |
 
-去 [HiSH Releases](https://github.com/harmoninux/HiSH/releases) 下载：
+### 方案 1：从 HiSH 应用提取（推荐）
 
-| 文件 | 说明 |
-|------|------|
-| `qemu-system-aarch64` | QEMU 虚拟机引擎 |
-| `Image` | Linux 内核 |
-| `rootfs.qcow2` | Alpine Linux 系统 |
+1. 安装 **HiSH** 鸿蒙应用（从 [HiSH Releases](https://github.com/harmoninux/HiSH/releases) 下载）
+2. 安装后，文件会解压到应用目录里
+3. 用文件管理器找到这些文件
 
-把这 3 个文件和本仓库的 `index.js` 一起放到手机 `Download` 文件夹。
+### 方案 2：自己编译/准备
+
+#### QEMU 二进制
+
+```bash
+# 在 Linux 上编译 ARM64 静态版本
+git clone https://github.com/nicholasgasior/qemu
+cd qemu
+./configure --target-list=aarch64-softmmu --static --disable-system
+make -j$(nproc)
+# 产物: build/qemu-system-aarch64
+```
+
+或下载预编译版：https://www.qemu.org/download/
+
+#### Linux 内核
+
+从 Alpine Linux 官网下载 ARM64 内核：
+https://alpinelinux.org/downloads/
+
+#### rootfs
+
+```bash
+# 创建空磁盘
+qemu-img create -f qcow2 rootfs.qcow2 2G
+
+# 然后用安装镜像引导安装 Alpine
+```
+
+---
+
+## 🚀 使用步骤
+
+### 第 1 步：把文件放到手机
+
+把以下文件放到手机 `Download` 文件夹：
+
+```
+手机/Download/
+├── index.js          ← 本仓库根目录
+├── qemu-system-aarch64
+├── Image
+└── rootfs.qcow2
+```
 
 ### 第 2 步：导入插件
 
