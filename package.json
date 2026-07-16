@@ -1,0 +1,17 @@
+{
+  "name": "hish-operit-plugin",
+  "version": "1.0.0",
+  "description": "HiSH Linux VM Manager for Operit AI - Based on HiSH open source project",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["operit", "hish", "linux", "qemu", "vm"],
+  "author": "HiSH Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.4.5"
+  }
+}
