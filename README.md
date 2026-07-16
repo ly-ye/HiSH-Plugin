@@ -4,44 +4,42 @@
 
 ---
 
-## 📥 下载这 3 个文件到手机
+## 📥 下载文件
 
-### 1. QEMU 二进制（3.6MB）
-https://packages.termux.dev/apt/termux-main/pool/main/q/qemu-system-aarch64-headless/qemu-system-aarch64-headless_1%3A10.2.1_aarch64.deb
+打开本仓库的 **`手机直接用`** 文件夹，下载里面所有文件到手机 `/sdcard/Download/`：
 
-> 用 7-Zip 解压，取出 `usr/bin/qemu-system-aarch64`
+| 文件 | 说明 |
+|------|------|
+| `index.js` | 插件文件，导入 Operit AI 用 |
+| `qemu-system-aarch64` | QEMU 主程序（已解压好，直接用） |
+| `Image` | Linux 内核（已改名好，直接用） |
+| `alpine-virt-3.20.3-aarch64.iso` | Alpine Linux 系统（直接用） |
+| `qemu/` 文件夹 | QEMU 固件文件（整个文件夹放进去） |
 
-### 2. Linux 内核（5MB）
-https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/aarch64/netboot/vmlinuz-lts
-
-> 下载后改名叫 `Image`
-
-### 3. Alpine Linux 系统（50MB）✅ 直接用！
-https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/aarch64/alpine-virt-3.20.3-aarch64.iso
-
-> **不需要安装**，启动就能用（类似U盘启动）
+> 全部已解压处理好，不需要再做任何解压操作。
 
 ---
 
-## 🚀 使用步骤
+## 🚀 三步搞定
 
-### 第 1 步：把文件放到手机
+### 第 1 步：放文件到手机
 
-放到手机 `/sdcard/Download/` 目录：
+把 `手机直接用` 文件夹里的所有文件，复制到手机 `/sdcard/Download/`：
 
 ```
 手机/sdcard/Download/
-├── index.js                    ← 从本仓库下载
-├── qemu-system-aarch64         ← 从 deb 解压出来
-├── Image                       ← vmlinuz-lts 改名
-└── alpine-virt-3.20.3-aarch64.iso  ← 直接放
+├── index.js
+├── qemu-system-aarch64
+├── Image
+├── alpine-virt-3.20.3-aarch64.iso
+└── qemu/                  ← 整个文件夹
 ```
 
 ### 第 2 步：导入插件
 
 1. 打开 **Operit AI**
 2. 我的 → 插件管理 → 导入插件
-3. 选择 `index.js`
+3. 选择 `/sdcard/Download/index.js`
 4. 启用
 
 ### 第 3 步：对着 Operit AI 说话
@@ -77,7 +75,7 @@ https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/aarch64/alpine-virt-3.20.3-
 
 | 你想做什么 | 怎么说 |
 |-----------|--------|
-| 创建虚拟机（ISO模式） | `创建一个名叫 mylinux 的模拟器，根文件系统路径 /sdcard/Download/alpine-virt-3.20.3-aarch64.iso，内核路径 /sdcard/Download/Image，镜像类型 iso` |
+| 创建虚拟机 | `创建一个名叫 mylinux 的模拟器，根文件系统路径 /sdcard/Download/alpine-virt-3.20.3-aarch64.iso，内核路径 /sdcard/Download/Image，镜像类型 iso` |
 | 启动 | `启动模拟器 mylinux` |
 | 执行命令 | `在模拟器里执行 uname -a` |
 | 装软件 | `在模拟器里安装 python3` |
@@ -87,15 +85,18 @@ https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/aarch64/alpine-virt-3.20.3-
 
 ---
 
-## 📁 目录结构
+## 📁 仓库结构
 
 ```
 .
-├── index.js          ← 直接导入这个（成品）
-├── src/
-│   ├── index.js      ← 和根目录一样（备份）
-│   └── index.ts      ← 源码（开发者看）
-└── README.md         ← 你正在看的
+├── 手机直接用/              ← 下载这个文件夹里的所有文件
+│   ├── index.js            ← 插件文件
+│   ├── qemu-system-aarch64 ← QEMU 主程序
+│   ├── Image               ← Linux 内核
+│   ├── alpine-virt-3.20.3-aarch64.iso  ← Linux 系统
+│   └── qemu/               ← QEMU 固件文件夹
+├── index.js                ← 插件文件（根目录也有一份）
+└── README.md               ← 你正在看的
 ```
 
 ---
@@ -103,5 +104,5 @@ https://dl-cdn.alpinelinux.org/alpine/v3.20/releases/aarch64/alpine-virt-3.20.3-
 ## ⚠️ 注意
 
 - 手机 CPU 必须是 ARM64（现在的手机基本都是）
-- ISO 模式下关机后数据不会保存（U盘启动原理）
-- 想保存数据？下次我教你安装到硬盘（qcow2）
+- ISO 模式下关机后数据不会保存（类似 U 盘启动原理）
+- Operit AI 目前支持 Android 8+，鸿蒙6等官方更新
