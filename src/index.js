@@ -22,7 +22,8 @@
         { "name": "name", "description": { "zh": "模拟器名称", "en": "Emulator name", "default": "Name" }, "type": "string", "required": true },
         { "name": "cpu", "description": { "zh": "CPU 核心数（默认 1）", "en": "CPU cores (default 1)", "default": "CPU cores" }, "type": "number", "required": false },
         { "name": "memory", "description": { "zh": "内存大小 MB（默认 512）", "en": "Memory MB (default 512)", "default": "Memory MB" }, "type": "number", "required": false },
-        { "name": "rootfs_path", "description": { "zh": "根文件系统镜像路径", "en": "Root filesystem image path", "default": "Rootfs path" }, "type": "string", "required": true },
+        { "name": "rootfs_path", "description": { "zh": "根文件系统镜像路径（qcow2）或 ISO 安装镜像路径", "en": "Rootfs path (qcow2) or ISO image path", "default": "Image path" }, "type": "string", "required": true },
+        { "name": "image_type", "description": { "zh": "镜像类型：qcow2（硬盘）或 iso（光盘），默认 qcow2", "en": "Image type: qcow2 or iso, default qcow2", "default": "Image type" }, "type": "string", "required": false },
         { "name": "kernel_path", "description": { "zh": "内核镜像路径", "en": "Kernel image path", "default": "Kernel path" }, "type": "string", "required": true }
       ]
     },
@@ -546,40 +547,49 @@ var HiSHPlugin = (function () {
         args.push('-fsdev', 'local,security_model=mapped-file,id=fsdev0,path=' + emu.sharedFolder + sharedFolderOption);
         args.push('-device', 'virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare');
 
-        // 根磁盘
-        args.push('-global', 'virtio-blk-pci.scsi=off');
-        args.push('-global', 'virtio-scsi-pci.cmd_per_lun=128');
-        args.push('-global', 'virtio-scsi-pci.packed=on');
-        args.push('-drive', 'if=none,format=qcow2,file=' + emu.rootFilesystem +
-            ',id=hd0,cache=writeback,aio=threads,discard=unmap');
-        args.push('-object', 'iothread,id=iothread0,poll-max-ns=2000000');
-        args.push('-device', 'virtio-scsi-pci-non-transitional,id=scsi0,num_queues=' + emu.cpu +
-            ',virtqueue_size=256,iothread=iothread0');
-        args.push('-device', 'scsi-hd,drive=hd0,bus=scsi0.0,logical_block_size=4096,' +
-            'physical_block_size=4096,rotation_rate=1,bootindex=1');
+        if (emu.imageType === 'iso') {
+            args.push('-cdrom', emu.rootFilesystem);
+        } else {
+            args.push('-global', 'virtio-blk-pci.scsi=off');
+            args.push('-global', 'virtio-scsi-pci.cmd_per_lun=128');
+            args.push('-global', 'virtio-scsi-pci.packed=on');
+            args.push('-drive', 'if=none,format=qcow2,file=' + emu.rootFilesystem +
+                ',id=hd0,cache=writeback,aio=threads,discard=unmap');
+            args.push('-object', 'iothread,id=iothread0,poll-max-ns=2000000');
+            args.push('-device', 'virtio-scsi-pci-non-transitional,id=scsi0,num_queues=' + emu.cpu +
+                ',virtqueue_size=256,iothread=iothread0');
+            args.push('-device', 'scsi-hd,drive=hd0,bus=scsi0.0,logical_block_size=4096,' +
+                'physical_block_size=4096,rotation_rate=1,bootindex=1');
 
-        // 额外磁盘
-        if (emu.disks) {
-            for (var d = 0; d < emu.disks.length; d++) {
-                var disk = emu.disks[d];
-                var fmt = disk.format || 'qcow2';
-                args.push('-drive', 'if=none,format=' + fmt + ',file=' + disk.path +
-                    ',id=' + disk.id + ',cache=writeback,aio=threads');
-                args.push('-device', 'scsi-hd,drive=' + disk.id + ',bus=scsi0.0');
+            if (emu.disks) {
+                for (var d = 0; d < emu.disks.length; d++) {
+                    var disk = emu.disks[d];
+                    var fmt = disk.format || 'qcow2';
+                    args.push('-drive', 'if=none,format=' + fmt + ',file=' + disk.path +
+                        ',id=' + disk.id + ',cache=writeback,aio=threads');
+                    args.push('-device', 'scsi-hd,drive=' + disk.id + ',bus=scsi0.0');
+                }
             }
         }
 
-        // 内核启动参数
-        args.push('-append',
-            'root=' + root + ' rw rootfstype=ext4 rootwait console=tty0 console=ttyAMA0 consoleblank=0 ' +
-            'elevator=noop skew_tick=1 acpi=on ' +
-            'mitigations=off audit=0 nmi_watchdog=0 hardened_usercopy=off random.trust_cpu=on virtio_balloon.config_impl=0 ' +
-            'security=none selinux=0 apparmor=0 psi=0 page_alloc.shuffle=0 swiotlb=noforce idle=halt ' +
-            'cpuidle.off=1 transparent_hugepage=always pci=noaer scsi_mod.use_blk_mq=1 rng_core.default_quality=1000 ' +
-            'systemd.mask=run-lock.mount systemd.mask=sys-kernel-debug.mount systemd.mask=dev-hugepages.mount ' +
-            'cryptomgr.notests rodata=off rcupdate.rcu_cpu_stall_timeout=60 ' +
-            'rcu_expedited=1 init_on_free=0 init_on_alloc=1 page_poison=0 slub_debug=- ' +
-            'TERM=xterm init=' + emu.init);
+        var appendArgs;
+        if (emu.imageType === 'iso') {
+            appendArgs = 'root=/dev/ram0 rw ramdisk_size=512000 console=tty0 console=ttyAMA0 consoleblank=0 ' +
+                'elevator=noop acpi=on mitigations=off audit=0 nmi_watchdog=0 ' +
+                'security=none selinux=0 apparmor=0 psi=0 random.trust_cpu=on ' +
+                'TERM=xterm';
+        } else {
+            appendArgs = 'root=' + root + ' rw rootfstype=ext4 rootwait console=tty0 console=ttyAMA0 consoleblank=0 ' +
+                'elevator=noop skew_tick=1 acpi=on ' +
+                'mitigations=off audit=0 nmi_watchdog=0 hardened_usercopy=off random.trust_cpu=on virtio_balloon.config_impl=0 ' +
+                'security=none selinux=0 apparmor=0 psi=0 page_alloc.shuffle=0 swiotlb=noforce idle=halt ' +
+                'cpuidle.off=1 transparent_hugepage=always pci=noaer scsi_mod.use_blk_mq=1 rng_core.default_quality=1000 ' +
+                'systemd.mask=run-lock.mount systemd.mask=sys-kernel-debug.mount systemd.mask=dev-hugepages.mount ' +
+                'cryptomgr.notests rodata=off rcupdate.rcu_cpu_stall_timeout=60 ' +
+                'rcu_expedited=1 init_on_free=0 init_on_alloc=1 page_poison=0 slub_debug=- ' +
+                'TERM=xterm init=' + emu.init;
+        }
+        args.push('-append', appendArgs);
 
         // QMP 监控
         args.push('-qmp', 'unix:' + emu.qmpSocket + ',server,nowait');
@@ -689,6 +699,7 @@ var HiSHPlugin = (function () {
         var id = generateId();
         var baseDir = getEmulatorDir(id);
 
+        var imageType = params.image_type || 'qcow2';
         var emulator = {
             id: id,
             name: params.name,
@@ -696,8 +707,9 @@ var HiSHPlugin = (function () {
             memory: params.memory || 512,
             init: '/sbin/init',
             portMapping: [],
-            rootVda: '/dev/sda',
+            rootVda: imageType === 'iso' ? '/dev/ram0' : '/dev/sda',
             rootFilesystem: params.rootfs_path,
+            imageType: imageType,
             kernelPath: params.kernel_path,
             sharedFolderReadonly: false,
             sharedFolder: baseDir + '/shared',
